@@ -43,7 +43,8 @@ companies = {
 
 # NEWS API
 
-newsapi = NewsApiClient(api_key="a63dbaeb6ca94c90a01b130645109fca")
+import os
+newsapi = NewsApiClient(api_key=os.getenv("a63dbaeb6ca94c90a01b130645109fca"))
 
 news = newsapi.get_top_headlines(
     category="business",
