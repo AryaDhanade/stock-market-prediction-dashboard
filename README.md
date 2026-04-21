@@ -13,3 +13,5 @@ Python, Streamlit, NLP, yfinance
 ## Run Locally
 pip install -r requirements.txt
 streamlit run app.py
+## Live Demo
+👉 [https://your-app.streamlit.app](https://stock-market-prediction-dashboard-ctfyyzu6zvqkyhyxuprfnk.streamlit.app/)
