@@ -25,7 +25,7 @@ sia = SentimentIntensityAnalyzer()
 # -----------------------------
 # ADD YOUR NEWS API KEY HERE
 # -----------------------------
-newsapi = NewsApiClient(api_key="YOUR_API_KEY")
+newsapi = NewsApiClient(api_key="a63dbaeb6ca94c90a01b130645109fca")
 
 # -----------------------------
 # COMPANY MAPPING
