@@ -1,37 +1,35 @@
-import nltk
-nltk.download('vader_lexicon')
-
 import streamlit as st
 import yfinance as yf
-import matplotlib.pyplot as plt
 import pandas as pd
+import matplotlib.pyplot as plt
 from newsapi import NewsApiClient
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
+import nltk
 
+# -----------------------------
+# DOWNLOAD VADER (FIRST TIME ONLY)
+# -----------------------------
+nltk.download('vader_lexicon')
 
-# CONFIG
-
+# -----------------------------
+# STREAMLIT CONFIG
+# -----------------------------
 st.set_page_config(page_title="AI Stock Dashboard", layout="wide")
 st.title("📊 AI Stock Market Dashboard")
 
-
-# STOCK DATA
-
-stock = st.text_input("Enter Stock Symbol", "RELIANCE.NS")
-
-data = yf.download(stock, start="2023-01-01")
-
-st.write(data.tail())
-
-fig, ax = plt.subplots()
-ax.plot(data['Close'])
-st.pyplot(fig)
-
-
-# SENTIMENT + COMPANY SETUP
-
+# -----------------------------
+# INIT SENTIMENT
+# -----------------------------
 sia = SentimentIntensityAnalyzer()
 
+# -----------------------------
+# ADD YOUR NEWS API KEY HERE
+# -----------------------------
+newsapi = NewsApiClient(api_key="YOUR_API_KEY")
+
+# -----------------------------
+# COMPANY MAPPING
+# -----------------------------
 companies = {
     "Tesla": "TSLA",
     "Apple": "AAPL",
@@ -40,100 +38,116 @@ companies = {
     "Infosys": "INFY.NS"
 }
 
+# -----------------------------
+# STOCK INPUT
+# -----------------------------
+stock = st.text_input("Enter Stock Symbol", "RELIANCE.NS")
 
-# NEWS API
+# -----------------------------
+# STOCK DATA
+# -----------------------------
+data = yf.download(stock, start="2023-01-01")
 
-import os
-newsapi = NewsApiClient(api_key=os.getenv("a63dbaeb6ca94c90a01b130645109fca"))
+if not data.empty:
+    st.subheader("📈 Stock Data")
+    st.dataframe(data.tail())
 
-news = newsapi.get_top_headlines(
-    category="business",
-    language="en",
-    page_size=10
-)
+    fig, ax = plt.subplots()
+    ax.plot(data['Close'])
+    ax.set_title(f"{stock} Closing Price")
+    st.pyplot(fig)
+else:
+    st.warning("No stock data found.")
 
+# -----------------------------
+# NEWS SECTION
+# -----------------------------
+st.header("📰 Market News & Sentiment Analysis")
 
-# NEWS + PREDICTION
-
-st.header("📰 Market News & Impact Analysis")
+try:
+    news = newsapi.get_top_headlines(
+        category="business",
+        language="en",
+        page_size=10
+    )
+except:
+    st.error("Error fetching news.")
+    news = {"articles": []}
 
 predictions = []
-st.write("DEBUG: news loaded")
 
-for article in news['articles']:
-    headline = article['title']
-    
+for article in news.get("articles", []):
+    headline = article.get("title", "")
+
+    if not headline:
+        continue
+
+    # -----------------------------
+    # VADER SENTIMENT
+    # -----------------------------
     sentiment = sia.polarity_scores(headline)['compound']
+
     detected = False
-    
+
     for name, ticker in companies.items():
         if name.lower() in headline.lower():
+
             predicted_change = round(sentiment * 2, 2)
 
             st.write(f"🔹 {headline}")
-            st.write(f"   → Stock: {ticker}")
-            st.write(f"   → Sentiment: {round(sentiment,2)}")
-
-            if predicted_change > 0:
-                st.success(f"   → Predicted Change: +{predicted_change}%")
-            else:
-                st.error(f"   → Predicted Change: {predicted_change}%")
-
+            st.write(f"→ Stock: {ticker}")
+            st.write(f"→ Sentiment: {round(sentiment, 2)}")
+            st.write(f"→ Predicted Change: {predicted_change}%")
             st.write("---")
 
-            predictions.append((ticker, predicted_change))
+            predictions.append({
+                "Stock": ticker,
+                "Predicted Change (%)": predicted_change
+            })
+
             detected = True
 
     if not detected:
         st.write(f"🔹 {headline}")
-        st.write("   → No major stock detected")
+        st.write("→ No major stock detected")
         st.write("---")
 
-
-# PREDICTION TABLE
-
+# -----------------------------
+# PREDICTION SUMMARY
+# -----------------------------
 st.header("📊 Prediction Summary")
 
 if predictions:
-    df_pred = pd.DataFrame(predictions, columns=["Stock", "Predicted Change (%)"])
+    df_pred = pd.DataFrame(predictions)
     st.dataframe(df_pred)
 else:
     st.write("No predictions available.")
 
-
+# -----------------------------
 # TRENDING STOCKS
-
+# -----------------------------
 st.header("🔥 Trending Stocks Today")
 
-stocks = ["RELIANCE.NS","TCS.NS","INFY.NS","AAPL","TSLA"]
+stocks = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "AAPL", "TSLA"]
 
 changes = []
 
-for stock in stocks:
-    df = yf.download(stock, period="1d", interval="1m")
+for s in stocks:
+    df = yf.download(s, period="1d", interval="1m")
 
-    try:
-        if not df.empty and 'Open' in df.columns and 'Close' in df.columns:
-            
-            open_price = float(df['Open'].iloc[0])
-            close_price = float(df['Close'].iloc[-1])
+    if not df.empty:
+        open_price = float(df['Open'].iloc[0])
+        close_price = float(df['Close'].iloc[-1])
 
-            change = ((close_price - open_price) / open_price) * 100
+        change = ((close_price - open_price) / open_price) * 100
 
-            changes.append({
-                "Stock": stock,
-                "Change (%)": round(change, 2)
-            })
+        changes.append({
+            "Stock": s,
+            "Change (%)": round(change, 2)
+        })
 
-    except Exception as e:
-        st.write(f"Error in {stock}: {e}")
-
-# Convert to DataFrame safely
-df_change = pd.DataFrame(changes)
-
-# 🔥 IMPORTANT: Check before sorting
-if not df_change.empty:
-    df_change["Change (%)"] = pd.to_numeric(df_change["Change (%)"], errors='coerce')
+if changes:
+    df_change = pd.DataFrame(changes)
 
     gainers = df_change.sort_values(by="Change (%)", ascending=False).head(3)
     losers = df_change.sort_values(by="Change (%)", ascending=True).head(3)
@@ -149,10 +163,4 @@ if not df_change.empty:
         st.dataframe(losers)
 
 else:
-    st.write("No stock data available.")
-
-for stock, change in predictions:
-    if change > 0:
-        st.success(f"{stock}: +{change}%")
-    else:
-        st.error(f"{stock}: {change}%")
+    st.write("No trending data available.")
