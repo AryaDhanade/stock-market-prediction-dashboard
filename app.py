@@ -6,30 +6,15 @@ from newsapi import NewsApiClient
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import nltk
 
-# -----------------------------
-# DOWNLOAD VADER (FIRST TIME ONLY)
-# -----------------------------
 nltk.download('vader_lexicon')
 
-# -----------------------------
-# STREAMLIT CONFIG
-# -----------------------------
 st.set_page_config(page_title="AI Stock Dashboard", layout="wide")
 st.title("📊 AI Stock Market Dashboard")
 
-# -----------------------------
-# INIT SENTIMENT
-# -----------------------------
 sia = SentimentIntensityAnalyzer()
 
-# -----------------------------
-# ADD YOUR NEWS API KEY HERE
-# -----------------------------
 newsapi = NewsApiClient(api_key="a63dbaeb6ca94c90a01b130645109fca")
 
-# -----------------------------
-# COMPANY MAPPING
-# -----------------------------
 companies = {
     "Tesla": "TSLA",
     "Apple": "AAPL",
@@ -38,14 +23,8 @@ companies = {
     "Infosys": "INFY.NS"
 }
 
-# -----------------------------
-# STOCK INPUT
-# -----------------------------
 stock = st.text_input("Enter Stock Symbol", "RELIANCE.NS")
 
-# -----------------------------
-# STOCK DATA
-# -----------------------------
 data = yf.download(stock, start="2023-01-01")
 
 if not data.empty:
@@ -59,9 +38,6 @@ if not data.empty:
 else:
     st.warning("No stock data found.")
 
-# -----------------------------
-# NEWS SECTION
-# -----------------------------
 st.header("📰 Market News & Sentiment Analysis")
 
 try:
@@ -81,10 +57,7 @@ for article in news.get("articles", []):
 
     if not headline:
         continue
-
-    # -----------------------------
-    # VADER SENTIMENT
-    # -----------------------------
+        
     sentiment = sia.polarity_scores(headline)['compound']
 
     detected = False
@@ -112,10 +85,7 @@ for article in news.get("articles", []):
         st.write("→ No major stock detected")
         st.write("---")
 
-# -----------------------------
-# PREDICTION SUMMARY
-# -----------------------------
-st.header("📊 Prediction Summary")
+st.header("Prediction Summary")
 
 if predictions:
     df_pred = pd.DataFrame(predictions)
@@ -126,7 +96,7 @@ else:
 # -----------------------------
 # TRENDING STOCKS
 # -----------------------------
-st.header("🔥 Trending Stocks Today")
+st.header("Trending Stocks Today")
 
 stocks = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "AAPL", "TSLA"]
 
