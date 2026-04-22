@@ -102,12 +102,24 @@ stocks = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "AAPL", "TSLA"]
 
 changes = []
 
-for s in stocks:
-    df = yf.download(s, period="1d", interval="1m")
+changes = []
 
-    if not df.empty:
-        open_price = float(df['Open'].iloc[0])
-        close_price = float(df['Close'].iloc[-1])
+for s in stocks:
+    try:
+        df = yf.download(s, period="1d", interval="1m")
+
+        if df.empty or 'Open' not in df or 'Close' not in df:
+            continue
+
+        open_price = df['Open'].iloc[0]
+        close_price = df['Close'].iloc[-1]
+
+        # Ensure values are numbers
+        if pd.isna(open_price) or pd.isna(close_price):
+            continue
+
+        open_price = float(open_price)
+        close_price = float(close_price)
 
         change = ((close_price - open_price) / open_price) * 100
 
@@ -115,6 +127,9 @@ for s in stocks:
             "Stock": s,
             "Change (%)": round(change, 2)
         })
+
+    except Exception as e:
+        continue
 
 if changes:
     df_change = pd.DataFrame(changes)
