@@ -9,7 +9,7 @@ import nltk
 nltk.download('vader_lexicon')
 
 st.set_page_config(page_title="AI Stock Dashboard", layout="wide")
-st.title("📊 AI Stock Market Dashboard")
+st.title("📊 Stock Market Dashboard")
 
 sia = SentimentIntensityAnalyzer()
 
